@@ -1,98 +1,183 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { TaskCard } from '@/components/TaskCard';
+import { Input } from '@/components/ui/Input';
+import { Colors } from '@/constants/Colors';
+import { GlobalStyles } from '@/constants/Styles';
+import { useTasks } from '@/context/TaskContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import { FlatList, StatusBar, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const { tasks, toggleTask } = useTasks();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPriority, setFilterPriority] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  }, []);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+
+      return matchesSearch && matchesPriority;
+    }).sort((a, b) => {
+      // Sort by completion (pending first) then by date
+      if (a.completed === b.completed) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      return a.completed ? 1 : -1;
+    });
+  }, [tasks, searchQuery, filterPriority]);
+
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <View style={styles.topRow}>
+        <View>
+          <Text style={[styles.greeting, { color: theme.textSecondary }]}>{greeting},</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>Guest User</Text>
+        </View>
+        <TouchableOpacity style={styles.avatar} onPress={() => router.push('/(tabs)/profile')}>
+          <Ionicons name="person" size={24} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+
+      <Input
+        placeholder="Search tasks..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        style={styles.searchInput}
+      />
+
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.filterChip, filterPriority === 'all' && { backgroundColor: Colors.primary }]}
+          onPress={() => setFilterPriority('all')}
+        >
+          <Text style={[styles.filterText, filterPriority === 'all' && { color: '#FFF' }]}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterChip, filterPriority === 'high' && { backgroundColor: Colors.primary }]}
+          onPress={() => setFilterPriority('high')}
+        >
+          <Text style={[styles.filterText, filterPriority === 'high' && { color: '#FFF' }]}>High</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterChip, filterPriority === 'medium' && { backgroundColor: Colors.primary }]}
+          onPress={() => setFilterPriority('medium')}
+        >
+          <Text style={[styles.filterText, filterPriority === 'medium' && { color: '#FFF' }]}>Medium</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterChip, filterPriority === 'low' && { backgroundColor: Colors.primary }]}
+          onPress={() => setFilterPriority('low')}
+        >
+          <Text style={[styles.filterText, filterPriority === 'low' && { color: '#FFF' }]}>Low</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 10 }]}>
+        My Tasks ({filteredTasks.length})
+      </Text>
+    </View>
+  );
+
+  return (
+    <View style={[GlobalStyles.container, { backgroundColor: theme.background, paddingTop: 40 }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <FlatList
+        data={filteredTasks}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <TaskCard
+            task={item}
+            onPress={() => {
+              // Edit task navigation could go here, or detail view
+            }}
+            onToggleComplete={() => toggleTask(item.id)}
+          />
+        )}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="clipboard-outline" size={64} color={theme.textSecondary} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No tasks found</Text>
+          </View>
+        }
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  headerContainer: {
+    marginBottom: 20,
+  },
+  topRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  greeting: {
+    fontSize: 16,
+    fontWeight: '500',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  userName: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchInput: {
+    marginBottom: 16,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  filterChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#E4E9F2', // Default chip color
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E3A59',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 60,
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 16,
   },
 });
