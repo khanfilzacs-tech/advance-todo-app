@@ -6,18 +6,28 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
+import { useAuth } from '@/context/AuthContext';
+
 export default function SignupScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
+    const { register } = useAuth();
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSignup = () => {
-        // Mock Signup
-        router.replace('/(tabs)');
+    const handleSignup = async () => {
+        if (!email || !password) {
+            alert("Please fill in fields");
+            return;
+        }
+        try {
+            await register(email, password);
+        } catch (e: any) {
+            alert("Registration failed: " + e.message);
+        }
     };
 
     return (

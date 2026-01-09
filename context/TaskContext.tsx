@@ -1,4 +1,3 @@
-// ```javascript
 import { Task } from '@/components/TaskCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
@@ -32,7 +31,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         if (!loading) {
             saveTasks(tasks);
         }
-    }, [tasks]);
+    }, [tasks, loading]);
 
     const loadTasks = async () => {
         try {

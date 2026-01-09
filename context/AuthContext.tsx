@@ -1,57 +1,46 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '@/firebaseConfig';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
+    user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: () => Promise<void>;
+    login: (email: string, pass: string) => Promise<void>;
+    register: (email: string, pass: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check for stored auth status on mount
-        const loadAuthData = async () => {
-            try {
-                const storedAuth = await AsyncStorage.getItem('isAuthenticated');
-                if (storedAuth === 'true') {
-                    setIsAuthenticated(true);
-                }
-            } catch (e) {
-                console.error('Failed to load auth data', e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadAuthData();
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setIsAuthenticated(!!currentUser);
+            setIsLoading(false);
+        });
+        return unsubscribe;
     }, []);
 
-    const login = async () => {
-        try {
-            await AsyncStorage.setItem('isAuthenticated', 'true');
-            setIsAuthenticated(true);
-        } catch (e) {
-            console.error('Failed to save auth data', e);
-        }
+    const login = async (email: string, pass: string) => {
+        await signInWithEmailAndPassword(auth, email, pass);
+    };
+
+    const register = async (email: string, pass: string) => {
+        await createUserWithEmailAndPassword(auth, email, pass);
     };
 
     const logout = async () => {
-        try {
-            await AsyncStorage.removeItem('isAuthenticated');
-            setIsAuthenticated(false);
-        } catch (e) {
-            console.error('Failed to remove auth data', e);
-        }
+        await signOut(auth);
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

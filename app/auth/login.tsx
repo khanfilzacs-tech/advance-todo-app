@@ -18,8 +18,15 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
 
     const handleLogin = async () => {
-        await login();
-        // Router redirection is handled by the root layout protection
+        if (!email || !password) {
+            alert('Please enter both email and password.');
+            return;
+        }
+        try {
+            await login(email, password);
+        } catch (e: any) {
+            alert('Login failed: ' + e.message);
+        }
     };
 
     return (

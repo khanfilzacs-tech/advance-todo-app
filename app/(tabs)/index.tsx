@@ -103,6 +103,7 @@ export default function HomeScreen() {
           <TaskCard
             task={item}
             onPress={() => {
+              //task/1
               router.push(`./task/${item.id}`);
             }}
             onToggleComplete={() => toggleTask(item.id)}
