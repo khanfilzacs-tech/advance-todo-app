@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -10,9 +10,10 @@ import { Colors } from '@/constants/Colors';
 import { GlobalStyles } from '@/constants/Styles';
 import { useTasks } from '@/context/TaskContext';
 
-export default function AddTaskScreen() {
+export default function EditTaskScreen() {
+    const { id } = useLocalSearchParams();
     const router = useRouter();
-    const { addTask } = useTasks();
+    const { tasks, updateTask, deleteTask } = useTasks();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
@@ -22,28 +23,43 @@ export default function AddTaskScreen() {
     const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
     const [dueDate, setDueDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [datePickerMode, setDatePickerMode] = useState<'date' | 'time'>('date');
-    const [reminderEnabled, setReminderEnabled] = useState(false);
-    const [reminderTime, setReminderTime] = useState(new Date(Date.now() + 60 * 60 * 1000));
-    const [showReminderPicker, setShowReminderPicker] = useState(false);
-    const [reminderPickerMode, setReminderPickerMode] = useState<'date' | 'time'>('date');
 
-    const resetForm = () => {
-        setTitle('');
-        setDescription('');
-        setCategory('Personal');
-        setPriority('medium');
-        setDueDate(new Date());
-        setReminderEnabled(false);
-        setReminderTime(new Date(Date.now() + 60 * 60 * 1000));
-    };
+    // Notification state
+    const [reminderEnabled, setReminderEnabled] = useState(false);
+    const [reminderTime, setReminderTime] = useState(new Date());
+    const [showReminderPicker, setShowReminderPicker] = useState(false);
+
+    const [reminderPickerMode, setReminderPickerMode] = useState<'date' | 'time'>('date');
+    const [datePickerMode, setDatePickerMode] = useState<'date' | 'time'>('date');
+
+    useEffect(() => {
+        if (id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                setTitle(task.title);
+                setDescription(task.description || '');
+                setCategory(task.category);
+                setPriority(task.priority);
+                setDueDate(new Date(task.dueDate));
+
+                if (task.reminderEnabled && task.reminderTime) {
+                    setReminderEnabled(true);
+                    setReminderTime(new Date(task.reminderTime));
+                } else {
+                    setReminderEnabled(false);
+                    // Default reminder time just in case user enables it
+                    setReminderTime(new Date(new Date(task.dueDate).getTime() - 10 * 60000));
+                }
+            }
+        }
+    }, [id, tasks]);
 
     const handleSave = async () => {
-        if (!title.trim()) {
+        if (!title.trim() || typeof id !== 'string') {
             return;
         }
 
-        await addTask({
+        await updateTask(id, {
             title,
             description,
             category,
@@ -53,12 +69,27 @@ export default function AddTaskScreen() {
             reminderTime: reminderEnabled ? reminderTime.toISOString() : undefined,
         });
 
-        resetForm();
         router.back();
     };
 
-    const normalizeDate = (date: Date) => {
-        return date;
+    const handleDelete = () => {
+        Alert.alert(
+            "Delete Task",
+            "Are you sure you want to delete this task?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        if (typeof id === 'string') {
+                            await deleteTask(id);
+                            router.back();
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -125,16 +156,6 @@ export default function AddTaskScreen() {
         }
     };
 
-    const showDatepicker = () => {
-        setDatePickerMode('date');
-        setShowDatePicker(true);
-    };
-
-    const showReminderpicker = () => {
-        setReminderPickerMode('date');
-        setShowReminderPicker(true);
-    };
-
     const PriorityBadge = ({ level, label, active }: { level: 'high' | 'medium' | 'low', label: string, active: boolean }) => (
         <TouchableOpacity
             style={[
@@ -156,9 +177,24 @@ export default function AddTaskScreen() {
         </TouchableOpacity>
     );
 
+    const showDatepicker = () => {
+        setDatePickerMode('date');
+        setShowDatePicker(true);
+    };
+
+    const showReminderpicker = () => {
+        setReminderPickerMode('date');
+        setShowReminderPicker(true);
+    };
+
     return (
         <ScrollView style={[GlobalStyles.container, { backgroundColor: theme.background }]}>
-            <Text style={[GlobalStyles.title, { color: theme.text, marginTop: 20 }]}>New Task</Text>
+            <View style={{ marginBottom: 20, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[GlobalStyles.title, { color: theme.text, marginBottom: 0 }]}>Edit Task</Text>
+                <TouchableOpacity onPress={handleDelete} style={{ padding: 8 }}>
+                    <Ionicons name="trash-outline" size={24} color={Colors.error} />
+                </TouchableOpacity>
+            </View>
 
             <Input
                 label="Task Title"
@@ -245,7 +281,7 @@ export default function AddTaskScreen() {
 
             <View style={{ height: 40 }} />
 
-            <Button title="Create Task" onPress={handleSave} size="large" />
+            <Button title="Save Changes" onPress={handleSave} size="large" />
             <Button
                 title="Cancel"
                 onPress={() => router.back()}

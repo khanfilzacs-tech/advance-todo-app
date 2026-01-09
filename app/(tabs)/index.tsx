@@ -27,7 +27,7 @@ export default function HomeScreen() {
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        (task.description || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
 
       return matchesSearch && matchesPriority;
@@ -95,6 +95,7 @@ export default function HomeScreen() {
   return (
     <View style={[GlobalStyles.container, { backgroundColor: theme.background, paddingTop: 40 }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+      {renderHeader()}
       <FlatList
         data={filteredTasks}
         keyExtractor={item => item.id}
@@ -102,12 +103,12 @@ export default function HomeScreen() {
           <TaskCard
             task={item}
             onPress={() => {
-              // Edit task navigation could go here, or detail view
+              router.push(`./task/${item.id}`);
             }}
             onToggleComplete={() => toggleTask(item.id)}
           />
         )}
-        ListHeaderComponent={renderHeader}
+        // ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="clipboard-outline" size={64} color={theme.textSecondary} />

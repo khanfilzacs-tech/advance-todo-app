@@ -18,6 +18,9 @@ export interface Task {
     dueDate: Date | string; // Handle both for safety
     completed: boolean;
     createdAt: number;
+    reminderEnabled?: boolean;
+    reminderTime?: string; // ISO Date string
+    notificationIdentifier?: string;
 }
 
 interface TaskCardProps {

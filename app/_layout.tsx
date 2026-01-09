@@ -44,7 +44,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <TaskProvider>
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
@@ -55,10 +55,14 @@ function RootLayoutNav() {
   );
 }
 
+import { NotificationProvider } from '@/context/NotificationContext';
+
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <NotificationProvider>
+        <RootLayoutNav />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

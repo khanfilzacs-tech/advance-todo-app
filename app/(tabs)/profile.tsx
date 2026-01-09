@@ -7,11 +7,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import { Alert, StyleSheet, Switch, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
+import { useNotifications } from '@/context/NotificationContext';
+
 export default function ProfileScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const { tasks } = useTasks();
     const { logout } = useAuth();
+    const { notificationsEnabled, toggleNotifications } = useNotifications();
 
     const handleClearData = async () => {
         Alert.alert(
@@ -73,7 +76,11 @@ export default function ProfileScreen() {
                 <SettingItem
                     icon="notifications-outline"
                     title="Notifications"
-                    value={<Switch value={true} trackColor={{ true: Colors.primary }} />}
+                    value={<Switch
+                        value={notificationsEnabled}
+                        onValueChange={toggleNotifications}
+                        trackColor={{ true: Colors.primary }}
+                    />}
                 />
 
                 <SettingItem
