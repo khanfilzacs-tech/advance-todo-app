@@ -6,17 +6,20 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
+import { useAuth } from '@/context/AuthContext';
+
 export default function LoginScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
+    const { login } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = () => {
-        // Mock login
-        router.replace('/(tabs)');
+    const handleLogin = async () => {
+        await login();
+        // Router redirection is handled by the root layout protection
     };
 
     return (

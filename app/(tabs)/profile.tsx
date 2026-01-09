@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/Colors';
 import { GlobalStyles } from '@/constants/Styles';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/context/TaskContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,6 +11,7 @@ export default function ProfileScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const { tasks } = useTasks();
+    const { logout } = useAuth();
 
     const handleClearData = async () => {
         Alert.alert(
@@ -78,6 +80,13 @@ export default function ProfileScreen() {
                     icon="trash-outline"
                     title="Clear All Data"
                     onPress={handleClearData}
+                    isDestructive
+                />
+
+                <SettingItem
+                    icon="log-out-outline"
+                    title="Log Out"
+                    onPress={logout}
                     isDestructive
                 />
             </View>

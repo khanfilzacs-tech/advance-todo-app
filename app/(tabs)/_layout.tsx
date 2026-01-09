@@ -43,8 +43,8 @@ export default function TabLayout() {
         name="add"
         options={{
           title: 'Add',
-          tabBarIcon: ({ color }) => <Ionicons size={32} name="add-circle" color={Colors.primary} />,
-          tabBarLabel: () => null, // Hide label for the middle "Add" button
+          tabBarIcon: ({ color }) => <Ionicons size={24} name="add-circle" color={color} />,
+          // tabBarLabel: () => null, // Hide label for the middle "Add" button
         }}
       />
       <Tabs.Screen
